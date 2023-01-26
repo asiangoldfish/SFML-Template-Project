@@ -13,8 +13,6 @@ else
 	TARGET="$1"
 fi
 
-echo "$TARGET"
-
 # Attempt to find the SFML project
 if [ ! -f "$SFML_PROJECT" ]; then
 	echo "Could not find the SFML template project"
