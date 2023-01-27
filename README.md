@@ -1,6 +1,6 @@
 # SFML-Template-Project
 
-Create a new SFML project template for Visual Studio.
+Create a new SFML project template for Visual Studio, MSVC++ v142
 
 # Instructions
 To create a new project:
