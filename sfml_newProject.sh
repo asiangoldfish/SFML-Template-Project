@@ -2,9 +2,13 @@
 #
 # Generate new SFML project template for Visual Studio 2017
 
-SFML_PROJECT="$(dirname "$0")/sfml_template.tar.gz"
+SFML_PROJECT="$(dirname "$0")/templates/SFML.tar.gz"
+PROJECT_TEMPLATE="$(dirname "$0")/templates/project_template"
 TARGET=""
 DEFAULT_PROJECT_NAME="NewSfmlProject"
+
+# Whether the script successfully extracted the SFML module
+IS_SFML_EXTRACTED=true
 
 ####
 # Create new project directory
@@ -54,26 +58,26 @@ function removeProjectDir() {
 }
 
 function main() {
+	# Create project directory
+	createProjectDir
+
 	# Attempt to find the SFML project
 	if [ ! -f "$SFML_PROJECT" ]; then
 		echo "Could not find the SFML template project"
 		exit 1
 	fi
-	
-	# Create new project directory
-	createProjectDir || exit "$?"
-	
-	echo "Extracting SFML template project..."
-	
-	# Extract the SFML project template
-	tar -xvf "$SFML_PROJECT" -C "$TARGET" &> /dev/null || {
-		echo "Could not create new project. Missing permission?"; \
-		removeProjectDir; \
-		exit 1; \
-		}
-	
-	# Success message
-	printf "Successfully created new SFML project at \'$TARGET\'\n"
+
+	echo "Generating new SFML project..."
+
+	# Create directory
+	mkdir -p "$TARGET" || { echo "Could not create new project. Missing permission?"; exit 1; }
+
+	# Copy project template to target destination
+	cp -r "$PROJECT_TEMPLATE"/* "$TARGET" || 
+		{ echo "Could not create project template."; removeProjectDir; exit 1; }
+
+	# Decompress and extract the SFML module
+	tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
 }
 
 # Accept command-line arguments for project name
@@ -81,16 +85,12 @@ if [ ! -z "$1" ]; then
 	TARGET="$1"
 fi
 
-# Attempt to find the SFML project
-if [ ! -f "$SFML_PROJECT" ]; then
-	echo "Could not find the SFML template project"
-	exit 1
+main
+
+# Output success message
+if [ "$IS_SFML_EXTRACTED" == 'true' ]; then
+	echo "Successfully created new SFML project at $TARGET"
+else
+	echo "Project was created, but is missing the SFML module."
+	echo "Remember to put it at $TARGET/SfmlProject"
 fi
-
-echo "Generating new SFML project..."
-
-mkdir -p "$TARGET" || { echo "Could not create new project. Missing permission?"; exit 1; }
-
-tar -xvf "$SFML_PROJECT" -C "$TARGET" || { echo "Could not create new project. Missing permission?"; exit 1; }
-
-echo "Successfully created new SFML project at $TARGET"
