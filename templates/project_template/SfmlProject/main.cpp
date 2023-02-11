@@ -4,7 +4,7 @@ int main()
 {
     // Create window
     sf::RenderWindow window(sf::VideoMode(200, 200), "SFML works!");
-    window.setFrameLimit(60);
+    window.setFramerateLimit(60);
 
     // Create circular shape and fill it
     sf::CircleShape shape(100.f);
