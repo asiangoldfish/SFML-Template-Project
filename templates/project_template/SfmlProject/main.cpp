@@ -17,8 +17,12 @@ int main()
         while (window.pollEvent(event))
         {
             // Closing the window with the X button
-            if (event.type == sf::Event::Closed)
-                window.close();
+	    switch (event.type)
+	    {
+		case sf::Event::Closed:
+		    window.close();
+		    break;
+	    }
         }
 
         window.clear();      // Clear screen
