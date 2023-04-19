@@ -30,3 +30,22 @@ The script only generates a Visual Studio project. This project is therefore not
 
 # How it works
 The archive file _sfml_template.tar.gz_ contains a Visual Studio solution, and a copy of SFML binaries and include files. To open the new project in Visual Studio, simply open the File Explorer and double click on the solution file.
+
+# Features
+Here is a list of available features:
+
+## Generate project
+**What:**  
+Creates a new SFML project that is already setup and ready to go. Just generate it and compile and execute the program to make sure that it works.
+
+**How to:**    
+Just execute the script *sfml_newProject.sh*. You will be prompted with entering the project name. All this does is to create a new directory with the passed name where the new SFML project will reside.
+
+## Extract the SFML library
+**What:**  
+You might not want to commit the SMFL library as it is rather large. Instead, whenever it's cloned, execute this command to extract it to the current working directory (CWD).
+
+**How to:**  
+```
+sfml_newProject.sh --extract
+```

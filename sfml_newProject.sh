@@ -80,12 +80,47 @@ function main() {
 	tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
 }
 
-# Accept command-line arguments for project name
-if [ ! -z "$1" ]; then
-	TARGET="$1"
+####
+# Extract the SFML library to a destination
+####
+function extract() {
+	local target
+	target="SFML"
+
+	# Make sure no directory is already named SFML
+	if [ ! -d "$target" ]; then
+		# Extract the library to the target location
+		mkdir "$target"
+		tar -xvf "$SFML_PROJECT" || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
+	else
+		printf "There's already another directory named \'%s\'\n" "$target"
+	fi
+}
+
+# If nothing was passed, then simply execute main
+if [ -z "$1" ]; then
+	printf "String is empty\n"
+	main
 fi
 
-main
+# Parse command-line arguments
+case "$1" in
+# Extract the SFML library
+	"--extract" ) extract ; exit 0;;
+
+# Quick way to give name to the project
+	"--name" )
+		# Check if the user gave us a project name
+		if [ -z "$2" ]; then
+			printf "Option \'--name\' is missing a project name\n"
+		else
+			TARGET="$2"
+			main
+		fi
+		;;
+
+	* ) printf "Invalid argument\n" ; exit 1 ;;
+esac
 
 # Output success message
 if [ "$IS_SFML_EXTRACTED" == 'true' ]; then
