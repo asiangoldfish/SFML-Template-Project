@@ -2,10 +2,13 @@
 #
 # Generate new SFML project template for Visual Studio 2017
 
-SFML_PROJECT="$(dirname "$0")/templates/SFML.tar.gz"
-PROJECT_TEMPLATE="$(dirname "$0")/templates/project_template"
+# This assumes that the user executes the script from the script's original file path and not as a symlink.
+CWD="$(dirname "$0")"
+SFML_PROJECT="$CWD/templates/SFML.tar.gz"
+PROJECT_TEMPLATE="$CWD/templates/project_template"
 TARGET=""
 DEFAULT_PROJECT_NAME="NewSfmlProject"
+MAKEFILE="$CWD/templates/Makefile"
 
 # Whether the script successfully extracted the SFML module
 IS_SFML_EXTRACTED=true
@@ -62,7 +65,7 @@ function main() {
 	createProjectDir
 
 	# Attempt to find the SFML project
-	if [ ! -f "$SFML_PROJECT" ]; then
+	if [ -d "$SFML_PROJECT" ]; then
 		echo "Could not find the SFML template project"
 		exit 1
 	fi
@@ -77,7 +80,7 @@ function main() {
 		{ echo "Could not create project template."; removeProjectDir; exit 1; }
 
 	# Decompress and extract the SFML module
-	tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
+	tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" || { echo "Could not extract the SFML module"; IS_SFML_EXTRACTED=false; }
 }
 
 ####
@@ -97,10 +100,28 @@ function extract() {
 	fi
 }
 
+function linux() {
+	# Create project directory
+	createProjectDir
+
+	# Copy main.cpp to target location
+	cp "$CWD/templates/project_template/SfmlProject/main.cpp" "$TARGET"
+
+	# Copy SFML library to target location
+	#cd "$TARGET" 
+	#extract
+
+	# Copy Makefile to target location
+	cp "$MAKEFILE" "$TARGET/Makefile"
+
+	printf "To build the project, just type \"make\"\n"
+}
+
 # If nothing was passed, then simply execute main
 if [ -z "$1" ]; then
-	printf "String is empty\n"
+	# printf "String is empty\n"
 	main
+	exit 0
 fi
 
 # Parse command-line arguments
@@ -117,6 +138,12 @@ case "$1" in
 			TARGET="$2"
 			main
 		fi
+		exit 0
+		;;
+
+	"--linux" )
+		linux
+		exit 0
 		;;
 
 	* ) printf "Invalid argument\n" ; exit 1 ;;
