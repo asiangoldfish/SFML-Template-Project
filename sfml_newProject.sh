@@ -114,7 +114,7 @@ function linux() {
 	# Copy Makefile to target location
 	cp "$MAKEFILE" "$TARGET/Makefile"
 
-	printf "To build the project, just type \"make\"\n"
+	printf "To build the project, just type \"make\"\n. Execute the program with ./game\n"
 }
 
 # If nothing was passed, then simply execute main
