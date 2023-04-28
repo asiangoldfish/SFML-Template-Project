@@ -10,6 +10,10 @@ TARGET=""
 DEFAULT_PROJECT_NAME="NewSfmlProject"
 MAKEFILE="$CWD/templates/Makefile"
 
+# Opttions
+VERBOSE=false
+VALID_VERBOSE_OPTIONS=( "--verbose" "-v" ) # Valid variants of verbose options
+
 # Whether the script successfully extracted the SFML module
 IS_SFML_EXTRACTED=true
 
@@ -80,7 +84,14 @@ function main() {
 		{ echo "Could not create project template."; removeProjectDir; exit 1; }
 
 	# Decompress and extract the SFML module
-	tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" || { echo "Could not extract the SFML module"; IS_SFML_EXTRACTED=false; }
+	# Check if verbose is enabled
+
+	if [ "$VERBOSE" == true ]; then
+		tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" || { echo "Could not extract the SFML module"; IS_SFML_EXTRACTED=false; }
+	else
+		tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" > /dev/null || { echo "Could not extract the SFML module"; IS_SFML_EXTRACTED=false; }
+	fi
+
 }
 
 ####
@@ -94,7 +105,13 @@ function extract() {
 	if [ ! -d "$target" ]; then
 		# Extract the library to the target location
 		mkdir "$target"
-		tar -xvf "$SFML_PROJECT" || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
+
+		# Check verbosity
+		if [ "$VERBOSE" == true ]; then
+			tar -xvf "$SFML_PROJECT" || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
+		else
+			tar -xvf "$SFML_PROJECT" > /dev/null || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
+		fi
 	else
 		printf "There's already another directory named \'%s\'\n" "$target"
 	fi
@@ -117,9 +134,33 @@ function linux() {
 	printf "To build the project, just type \"make\"\n. Execute the program with ./game\n"
 }
 
+function checkVerbosity() {
+	# Check if the verbose option was passed
+	if [[ " ${VALID_VERBOSE_OPTIONS[*]} " == *" $1 "* ]]; then
+    	# whatever you want to do when array contains value
+		VERBOSE=true
+	fi
+}
+
+function usage() {
+	printf """%s OPTION [--verbose]
+
+Script to generate new SFML projects on Linux or NT systems.
+
+Options:
+	--extract		extract the SFML library to $PWD
+	--help | -h		this page
+	--name
+""" "$(basename "$0")"
+}
+
 # If nothing was passed, then simply execute main
 if [ -z "$1" ]; then
 	# printf "String is empty\n"
+	main
+	exit 0
+elif [[ " ${VALID_VERBOSE_OPTIONS[*]} " == *" $1 "* ]]; then
+	VERBOSE=true
 	main
 	exit 0
 fi
@@ -127,10 +168,15 @@ fi
 # Parse command-line arguments
 case "$1" in
 # Extract the SFML library
-	"--extract" ) extract ; exit 0;;
+	"--extract" )
+		checkVerbosity "$2"
+		extract ; 
+		exit 0
+		;;
 
 # Quick way to give name to the project
 	"--name" )
+		checkVerbosity "$3"
 		# Check if the user gave us a project name
 		if [ -z "$2" ]; then
 			printf "Option \'--name\' is missing a project name\n"
@@ -146,7 +192,12 @@ case "$1" in
 		exit 0
 		;;
 
-	* ) printf "Invalid argument\n" ; exit 1 ;;
+	"--help" | "-h" )
+		usage
+		exit 0
+		;;
+
+	* ) printf "Invalid argument. Use the \'--help\' option for arguments.\n" ; exit 1 ;;
 esac
 
 # Output success message
