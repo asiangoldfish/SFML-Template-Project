@@ -1,26 +1,47 @@
 #!/usr/bin/bash
 #
-# Generate new SFML project template for Visual Studio 2017
-
 # This assumes that the user executes the script from the script's original file path and not as a symlink.
+
+# Microsoft Visual C/C++ Compiler version number
+MSVC_VERSION=412
+
+# Directory from which this project is executed from
 CWD="$(dirname "$0")"
+
+# This script's name
+SCRIPT="$(basename "$0")"
+
+# Archived SFML module location
 SFML_PROJECT="$CWD/templates/SFML.tar.gz"
+
+# Project template location
 PROJECT_TEMPLATE="$CWD/templates/project_template"
+
+# Loction in the user's system to deploy the SFML project to
 TARGET=""
+
+# The target SFML project's default name
 DEFAULT_PROJECT_NAME="NewSfmlProject"
+
+# Makefile template location. Used for Linux systems
 MAKEFILE="$CWD/templates/Makefile"
 
-# Opttions
+####
+# Options that the users can enable
+####
+# Print out extra information to stdout
 VERBOSE=false
-VALID_VERBOSE_OPTIONS=( "--verbose" "-v" ) # Valid variants of verbose options
+
+# Valid variants of verbose options
+VALID_VERBOSE_OPTIONS=( "--verbose" "-v" )
 
 # Whether the script successfully extracted the SFML module
-IS_SFML_EXTRACTED=true
+IS_SFML_EXTRACTED=false
 
 ####
 # Create new project directory
 ####
-function createProjectDir() {
+function create_project_dir() {
 	# If the target directory already exists, then we output error message and
 	# exit the script
 	if [ -d "$TARGET" ]; then
@@ -64,15 +85,12 @@ function removeProjectDir() {
 	rm -rf "$TARGET"
 }
 
-function main() {
+function create_VS_project() {
 	# Create project directory
-	createProjectDir
+	create_project_dir
 
 	# Attempt to find the SFML project
-	if [ -d "$SFML_PROJECT" ]; then
-		echo "Could not find the SFML template project"
-		exit 1
-	fi
+	if [ -d "$SFML_PROJECT" ]; then echo "Could not find the SFML template project" && exit 1; fi
 
 	echo "Generating new SFML project..."
 
@@ -84,13 +102,7 @@ function main() {
 		{ echo "Could not create project template."; removeProjectDir; exit 1; }
 
 	# Decompress and extract the SFML module
-	# Check if verbose is enabled
-
-	if [ "$VERBOSE" == true ]; then
-		tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" || { echo "Could not extract the SFML module"; IS_SFML_EXTRACTED=false; }
-	else
-		tar -xvf "$SFML_PROJECT" -C "$TARGET/SfmlProject" > /dev/null || { echo "Could not extract the SFML module"; IS_SFML_EXTRACTED=false; }
-	fi
+	extract "$TARGET/SfmlProject"
 
 }
 
@@ -98,112 +110,116 @@ function main() {
 # Extract the SFML library to a destination
 ####
 function extract() {
-	local target
-	target="SFML"
+	local target=""
+	
+
+	if [ -z "$1" ]; then target="."
+	else target="$1/SFML"
+	fi
 
 	# Make sure no directory is already named SFML
 	if [ ! -d "$target" ]; then
-		# Extract the library to the target location
 		mkdir "$target"
 
 		# Check verbosity
 		if [ "$VERBOSE" == true ]; then
-			tar -xvf "$SFML_PROJECT" || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
+			tar -xvf "$SFML_PROJECT" --directory "$target" --strip-components=1 || { echo "Could not extract the SFML module"; return 1; }
 		else
-			tar -xvf "$SFML_PROJECT" > /dev/null || { echo "Could not extract the SFML module"; IS_SFML_EXTACRED=false; }
+			tar -xvf "$SFML_PROJECT" --directory "$target" --strip-components=1 > /dev/null || { echo "Could not extract the SFML module"; return 1; }
 		fi
 	else
 		printf "There's already another directory named \'%s\'\n" "$target"
 	fi
+
+	IS_SFML_EXTRACTED=true
 }
 
 function linux() {
+	local confirmSfml=""
+
 	# Create project directory
-	createProjectDir
+	create_project_dir || return "$?"
 
 	# Copy main.cpp to target location
 	cp "$CWD/templates/project_template/SfmlProject/main.cpp" "$TARGET"
 
-	# Copy SFML library to target location
-	#cd "$TARGET" 
-	#extract
+	# Copy SFML library to target location after asking the user for
+	# confirmation
+	#read -p "Would you like to include the SFML library? [Y/n] " confirmSfml
+
+	# Makefile is bugged and will also compile SFML example projects from the
+	# SFML library
+
+	# If yes, then extract the library to TARGET location. Otherwise
+	# delete the newly created project directory
+	#if [ "$confirmSfml" == "Y" ] || [ "$confirmSfml" == "y" ] || [ "$confirmSfml" == "" ]; then
+	#	extract "$TARGET" || { removeProjectDir; return 1; } 
+	#fi
 
 	# Copy Makefile to target location
 	cp "$MAKEFILE" "$TARGET/Makefile"
 
-	printf "To build the project, just type \"make\"\n. Execute the program with ./game\n"
-}
-
-function checkVerbosity() {
-	# Check if the verbose option was passed
-	if [[ " ${VALID_VERBOSE_OPTIONS[*]} " == *" $1 "* ]]; then
-    	# whatever you want to do when array contains value
-		VERBOSE=true
-	fi
+	# Success messages
+	printf "\nSuccessfully created a SFML project at \'%s\'!\n" "$TARGET"
+	printf "To build the project, \"make\". Execute the program with ./game\n"
 }
 
 function usage() {
-	printf """%s OPTION [--verbose]
+	printf """%s OPTIONS [FLAGS]
 
 Script to generate new SFML projects on Linux or NT systems.
 
 Options:
-	--extract		extract the SFML library to $PWD
-	--help | -h		this page
-	--name
+	--extract \t\textract the SFML library
+	--help | -h \t\tthis page
+	--linux	\t\tcreate SFML project for Linux systems
+	--visual-studio \tcreate Visual Studio solution with the SFML library
+	--version | -v \t\tthis script's version
+
+Flags:
+	--verbose \t\tprint verbose data to console. This must be the first
+				argument to the script
 """ "$(basename "$0")"
 }
 
-# If nothing was passed, then simply execute main
-if [ -z "$1" ]; then
-	# printf "String is empty\n"
-	main
-	exit 0
-elif [[ " ${VALID_VERBOSE_OPTIONS[*]} " == *" $1 "* ]]; then
-	VERBOSE=true
-	main
-	exit 0
-fi
+####
+# Handle the user's command-line arguments
+#
+# After arguments have been passed and evaluated, appropriate functions are
+# called
+####
+function handleCommands() {
+	local execute_cmd
 
-# Parse command-line arguments
-case "$1" in
-# Extract the SFML library
-	"--extract" )
-		checkVerbosity "$2"
-		extract ; 
-		exit 0
-		;;
+	# If no arguments were passed, then run the help page
+	if [[ $# -eq 0 ]]; then usage; return 0; fi
+	
+	# Parse arguments
+	for arg in "$@"; do
+		case "$1" in
+			# Extract the SFML library
+			"--extract" ) extract; exit 0;;
 
-# Quick way to give name to the project
-	"--name" )
-		checkVerbosity "$3"
-		# Check if the user gave us a project name
-		if [ -z "$2" ]; then
-			printf "Option \'--name\' is missing a project name\n"
-		else
-			TARGET="$2"
-			main
-		fi
-		exit 0
-		;;
+			# Help page
+			"--help" | "-h" ) usage; return "$?" ;;
 
-	"--linux" )
-		linux
-		exit 0
-		;;
+			# Install SFML project for Linux
+			"--linux" ) linux; return "$?" ;;
 
-	"--help" | "-h" )
-		usage
-		exit 0
-		;;
+			# Quick way to give name to the project
+			"--visual-studio" ) create_VS_project; return "$?" ;;
 
-	* ) printf "Invalid argument. Use the \'--help\' option for arguments.\n" ; exit 1 ;;
-esac
+			# Extra information printed to console
+			"--verbose" ) VERBOSE=true;;
 
-# Output success message
-if [ "$IS_SFML_EXTRACTED" == 'true' ]; then
-	echo "Successfully created new SFML project at $TARGET"
-else
-	echo "Project was created, but is missing the SFML module."
-	echo "Remember to put it at $TARGET/SfmlProject"
-fi
+			# Print this project's version
+			"--version" | "-v" ) printf "1.0.0\n"; return 0 ;;
+
+			* ) printf "Invalid argument. Use the \'--help\' option for arguments.\n" ; exit 1 ;;
+		esac
+		shift
+	done
+}
+
+# Run the program
+handleCommands "$@"
