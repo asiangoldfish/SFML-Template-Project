@@ -113,7 +113,7 @@ function extract() {
 	local target=""
 	
 
-	if [ -z "$1" ]; then target="."
+	if [ -z "$1" ]; then target="./SFML"
 	else target="$1/SFML"
 	fi
 
